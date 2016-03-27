@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import json
-import multiprocessing
+#import multiprocessing
 from datetime import datetime
+import itertools
 
 timeout = 400  # unit ms
 concurrent = 10
@@ -13,9 +14,9 @@ def check_requirements():
     import sys
 
     def check_python_version():
-        if sys.hexversion <= 0x3040000:
-            print('your "python" lower than 3.4.0 upgrade.')
-            return False
+        #if sys.hexversion <= 0x3040000:
+        #    print('your "python" lower than 3.4.0 upgrade.')
+        #    return False
         return True
 
     def check_is_use_proxy():
@@ -69,26 +70,28 @@ def request(target):
 
 
 def handle_ip(target):
-    from urllib.parse import urlparse
+    #from urllib.parse import urlparse
+    from six.moves.urllib.parse import urlparse
     address = urlparse('http://%s' % target)
     return address.hostname, address.port or 80
 
 
 def fetch(payload):
-    with multiprocessing.Pool(concurrent) as pool:
-        for service_item in payload:
-            print(service_item['title'])
-            print(', '.join(service_item['domains']))
-            for name, ips in service_item['ips'].items():
-                ips = pool.map(request, map(handle_ip, ips * testing_times))
-                ips = sorted(
-                    ({'ip': ip, 'delta': delta} for ip, delta in ips if delta),
-                    key=lambda item: item['delta']
-                )
-                service_item['ips'][name] = ips
-                print('\t%s' % name)
-                for item in ips:
-                    print('\t\t%(ip)-15s\t%(delta)sms' % item)
+    #with multiprocessing.Pool(concurrent) as pool:
+    for service_item in payload:
+        print(service_item['title'])
+        print(', '.join(service_item['domains']))
+        for name, ips in service_item['ips'].items():
+            ips = itertools.imap(request, map(handle_ip, ips * testing_times))
+            ips = sorted(
+                ({'ip': ip, 'delta': delta} for ip, delta in ips if delta),
+                key=lambda item: item['delta']
+            )
+            service_item['ips'][name] = ips
+            print('\t%s' % name)
+            for item in ips:
+                print('\t\t%(ip)-15s\t%(delta)sms' % item)
+
     return payload
 
 
